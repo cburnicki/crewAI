@@ -1,3 +1,4 @@
+import threading
 import json
 import re
 from typing import Any, Dict, List, Union
@@ -153,6 +154,8 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                         self.messages.append(
                             self._format_msg(formatted_answer.text, role="user")
                         )
+                        
+                        self._create_short_term_memory(formatted_answer.text)
 
         except OutputParserException as e:
             self.messages.append({"role": "user", "content": e.error})
@@ -171,6 +174,12 @@ class CrewAgentExecutor(CrewAgentExecutorMixin):
                 return self._invoke_loop(formatted_answer)
             else:
                 raise e
+
+        # Creating long term memory
+        create_long_term_memory = threading.Thread(
+            target=self._create_long_term_memory, args=(formatted_answer.text,)
+        )
+        create_long_term_memory.start()
 
         self._show_logs(formatted_answer)
         return formatted_answer
